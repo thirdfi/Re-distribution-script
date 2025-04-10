@@ -205,7 +205,7 @@ def mint_to_specific_wallet():
     if not xp or xp <= 1:
         logging.info("❌ No users with XP found.")
         return
-
+    logging.info(XP_OWNER_PRIVATE_KEY)
     web3 = Web3(Web3.HTTPProvider(WEB3_RPC))
     owner = Account.from_key(XP_OWNER_PRIVATE_KEY)
     nonce = web3.eth.get_transaction_count(owner.address)
