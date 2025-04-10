@@ -71,7 +71,7 @@ def mint_xp(wallet_address, amount, nonce, web3, contract):
         "nonce": nonce,
     })
 
-    signed_tx = web3.eth.account.sign_transaction(tx, private_key=XP_OWNER_PRIVATE_KEY)
+    signed_tx = web3.eth.account.sign_transaction(tx)
     tx_hash = web3.eth.send_raw_transaction(signed_tx.raw_transaction)
     receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
 
