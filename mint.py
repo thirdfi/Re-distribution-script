@@ -61,7 +61,7 @@ def get_users():
     conn.close()
     return users
 
-def mint_xp(wallet_address, amount, nonce, web3, contract):
+def mint_xp(wallet_address, amount, nonce, web3, contract, owner):
     tx = contract.functions.mint(
         wallet_address,
         web3.to_wei(amount, 'ether')
@@ -72,7 +72,7 @@ def mint_xp(wallet_address, amount, nonce, web3, contract):
         "nonce": nonce,
     })
 
-    signed_tx = web3.eth.account.sign_transaction(tx)
+    signed_tx = owner.sign_transaction(tx) 
     tx_hash = web3.eth.send_raw_transaction(signed_tx.raw_transaction)
     receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
 
@@ -214,7 +214,7 @@ def mint_to_specific_wallet():
     xp_to_mint = Decimal(xp - 1)
     try:
         logging.info(f"🔄 Minting {xp_to_mint} XP give {username} → {wallet_address}")
-        tx_hash = mint_xp(wallet_address, xp_to_mint, nonce, web3, contract)
+        tx_hash = mint_xp(wallet_address, xp_to_mint, nonce, web3, contract, owner)
         if tx_hash:
             record_transaction(
                 wallet_id=wallet_id,
