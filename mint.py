@@ -172,5 +172,65 @@ def run():
         nonce += 1
 
 
+def mint_to_specific_wallet():
+    target_address = "0x377B8a3152abEfb9a9da776C606024Bb8b93be0F"
+
+    conn = psycopg2.connect(
+        dbname=POSTGRES_DB,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT
+    )
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT u.username, up.id, up.xp_points, w.wallet_address, w.id
+        FROM user_userprofile up
+        JOIN user_user u ON up.user_id = u.id
+        JOIN user_wallet w ON w.user_id = up.id
+        WHERE w.wallet_address = %s
+    """, (target_address,))
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not result:
+        logging.error("❌ Wallet not found")
+        return
+
+    username, profile_id, xp, wallet_address, wallet_id = result
+
+    if not xp or xp <= 1:
+        logging.info("❌ No users with XP found.")
+        return
+
+    web3 = Web3(Web3.HTTPProvider(WEB3_RPC))
+    owner = web3.eth.account.from_key(XP_OWNER_PRIVATE_KEY)
+    nonce = web3.eth.get_transaction_count(owner.address)
+    contract = web3.eth.contract(address=web3.to_checksum_address(XP_TOKEN_CONTRACT_ADDRESS), abi=XP_TOKEN_ABI)
+
+    xp_to_mint = Decimal(xp - 1)
+    try:
+        logging.info(f"🔄 Minting {xp_to_mint} XP 给 {username} → {wallet_address}")
+        tx_hash = mint_xp(wallet_address, xp_to_mint, nonce, web3, contract)
+        if tx_hash:
+            record_transaction(
+                wallet_id=wallet_id,
+                tx_hash=tx_hash,
+                user_profile_id=profile_id,
+                amount=xp_to_mint,
+                token="XP",
+                chain_id=CHAIN_ID,
+                status="success",
+                retry_count=0
+            )
+            logging.info(f"✅ Success Mint {xp_to_mint} XP → TX: {tx_hash}")
+        else:
+            logging.error(f"❌ Mint Fail for {username}")
+    except Exception as e:
+        logging.error(f"🔥 ERROR: {e}")
+
+
 if __name__ == "__main__":
-    run()
+    mint_to_specific_wallet()
