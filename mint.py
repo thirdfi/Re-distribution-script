@@ -4,6 +4,7 @@ import psycopg2
 from web3 import Web3
 from decimal import Decimal
 from datetime import datetime
+from eth_account import Account
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 from dotenv import load_dotenv
@@ -206,13 +207,13 @@ def mint_to_specific_wallet():
         return
 
     web3 = Web3(Web3.HTTPProvider(WEB3_RPC))
-    owner = web3.eth.account.from_key(XP_OWNER_PRIVATE_KEY)
+    owner = Account.from_key(XP_OWNER_PRIVATE_KEY)
     nonce = web3.eth.get_transaction_count(owner.address)
     contract = web3.eth.contract(address=web3.to_checksum_address(XP_TOKEN_CONTRACT_ADDRESS), abi=XP_TOKEN_ABI)
 
     xp_to_mint = Decimal(xp - 1)
     try:
-        logging.info(f"🔄 Minting {xp_to_mint} XP 给 {username} → {wallet_address}")
+        logging.info(f"🔄 Minting {xp_to_mint} XP give {username} → {wallet_address}")
         tx_hash = mint_xp(wallet_address, xp_to_mint, nonce, web3, contract)
         if tx_hash:
             record_transaction(
