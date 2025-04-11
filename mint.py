@@ -173,61 +173,6 @@ def run():
         except Exception as e:
             logging.error(f"🔥 Error minting for {username}: {e}")
 
-def get_hahhah_test_user():
-    conn = psycopg2.connect(
-        dbname=POSTGRES_DB,
-        user=POSTGRES_USER,
-        password=POSTGRES_PASSWORD,
-        host=POSTGRES_HOST,
-        port=POSTGRES_PORT
-    )
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT u.username, up.id, up.xp_points, w.wallet_address, w.id AS wallet_id
-        FROM user_userprofile up
-        JOIN user_user u ON up.user_id = u.id
-        JOIN user_wallet w ON w.user_id = up.id
-        WHERE u.username = 'HAHHAHTEST' AND up.xp_points > 0
-    """)
-    user = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return user
-
-
-def run_for_hahhah_test_user():
-    logging.info("🚀 Minting XP for HAHHAHTEST...")
-    user = get_hahhah_test_user()
-    if not user:
-        logging.info("❌ No XP or user not found for HAHHAHTEST.")
-        return
-
-    username, profile_id, xp, wallet_address, wallet_id = user
-    try:
-        if has_pending_transaction(profile_id, xp):
-            logging.info(f"⏭️ Skipping {username}: XP already minted or equal")
-            return
-
-        xp_to_mint = Decimal(xp - 1)
-        logging.info(f"🔄 Minting {xp_to_mint} XP for {username} → {wallet_address}")
-        tx_hash = mint_xp(wallet_address, Decimal(xp_to_mint))
-        if tx_hash:
-            record_transaction(
-                wallet_id=wallet_id,
-                tx_hash=tx_hash,
-                user_profile_id=profile_id,
-                amount=xp_to_mint,
-                token="XP",
-                chain_id=CHAIN_ID,
-                status="success",
-                retry_count=0
-            )
-            logging.info(f"✅ Minted {xp_to_mint} XP → TX: {tx_hash}")
-        else:
-            logging.error(f"❌ TX failed for {username}")
-    except Exception as e:
-        logging.error(f"🔥 Error minting for {username}: {e}")
-
 
 if __name__ == "__main__":
-    run_for_hahhah_test_user()
+    run()
